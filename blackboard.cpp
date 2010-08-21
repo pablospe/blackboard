@@ -1,5 +1,5 @@
-#include "cv.h"
-#include "highgui.h"
+#include <opencv/cv.h>
+#include <opencv/highgui.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -33,7 +33,7 @@ void on_mouse( int event, int x, int y, int flags, void* )
         }
 
         prev_pt = pt;
-        cvShowImage( "image", img );
+        imshow( "image", img );
     }
 }
 
@@ -44,18 +44,18 @@ int main( int argc, char** argv )
             "\tESC - quit the program\n"
             "\tr - restore the original image\n" );
 
-    cvNamedWindow( "image", 1 );
+    namedWindow( "image", 1 );
     cvSetMouseCallback( "image", on_mouse, 0 );
 
     /* create an image */
     IplImage *img0 = cvCreateImage(cvSize(400, 400), IPL_DEPTH_8U, 3);
 
     img = cvCloneImage( img0 );
-    cvShowImage( "image", img );
+    imshow( "image", img );
 
     for(;;)
     {
-        int c = cvWaitKey(0);
+        int c = waitKey(0);
 
         if( (char)c == 27 )
             break;
