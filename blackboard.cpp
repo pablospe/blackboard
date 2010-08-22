@@ -1,5 +1,6 @@
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
+#include <opencv/cvaux.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
@@ -10,6 +11,10 @@ using namespace std;
 IplImage* img0 = 0, *img = 0;
 CvPoint prev_pt = {-1,-1};
 
+
+map< string, vector<Point> > contours;
+map< float, string > result;  // sorting the result
+
 vector<Point> contour_a;
 vector<Point> contour_b;
 vector<Point> contour_c;
@@ -17,6 +22,30 @@ vector<Point> contour_d;
 vector<Point> contour_e;
 
 vector<Point> current_contour;
+
+
+void copyFrom(Seq<Point> &seq, vector<Point>& vec)
+{
+    for (int i=0; i < vec.size(); i++) {
+        seq.push_back(vec[i]);
+    }
+}
+
+std::ostream& operator<< (std::ostream &o, const vector<Point> &v)
+{
+    for (int i=0; i<v.size(); i++) {
+        cout << "Point: (" << v[i].x << "," << v[i].y << ")" << endl;
+    }
+}
+
+std::ostream& operator<< (std::ostream &o, const Seq<Point> &s)
+{
+    vector<Point> vec;
+    s.copyTo(vec);
+    cout << vec;
+}
+
+
 
 void on_mouse( int event, int x, int y, int flags, void* )
 {
@@ -27,28 +56,48 @@ void on_mouse( int event, int x, int y, int flags, void* )
         if( prev_pt.x > 0 ) {
             printf( "End!\n");
 
-            float a, b, c, d, e;
+            int hist_size[] = {32, 32};
+            CvHistogram *current_hist = cvCreateHist( 2, hist_size, CV_HIST_ARRAY );
 
-            a = matchShapes( Mat(contour_a), Mat(current_contour), CV_CONTOURS_MATCH_I3, 0);
-            b = matchShapes( Mat(contour_b), Mat(current_contour), CV_CONTOURS_MATCH_I3, 0);
-            c = matchShapes( Mat(contour_c), Mat(current_contour), CV_CONTOURS_MATCH_I3, 0);
-            d = matchShapes( Mat(contour_d), Mat(current_contour), CV_CONTOURS_MATCH_I3, 0);
-            e = matchShapes( Mat(contour_e), Mat(current_contour), CV_CONTOURS_MATCH_I3, 0);
+            MemStorage storage_current = cvCreateMemStorage(0);
+            Seq<Point> seq_contour_current(storage_current);
+            copyFrom( seq_contour_current, current_contour );
 
-            map< float, string > result;  // sorting the result
-            result[ a ] = "a";
-            result[ b ] = "b";
-            result[ c ] = "c";
-            result[ d ] = "d";
-            result[ e ] = "e";
+            cvCalcPGH( seq_contour_current.seq, current_hist );
 
-            cout << "matchShapes(a,.) = " << a << endl;
-            cout << "matchShapes(b,.) = " << b << endl;
-            cout << "matchShapes(c,.) = " << c << endl;
-            cout << "matchShapes(d,.) = " << d << endl;
-            cout << "matchShapes(e,.) = " << e << endl;
+            CvHistogram *hist = cvCreateHist( 2, hist_size, CV_HIST_ARRAY );
 
-            cout << "Letra " << result.begin()->second << "!!!!!\n";
+            map< string, vector<Point> >::iterator it;
+            for ( it=contours.begin() ; it != contours.end(); it++ ) {
+                const string &letra = (*it).first;
+                vector<Point> &contour = (*it).second;
+
+                // Transformo a cvSeq, ya que cvCalcPGH necesita este tipo
+                MemStorage storage = cvCreateMemStorage(0);
+                Seq<Point> seq_contour( storage );
+                copyFrom( seq_contour, contour );
+
+                // calculo el histograma con PGH
+                cvCalcPGH( seq_contour.seq , hist );
+
+                float res = cvCompareHist( hist, current_hist, CV_COMP_CORREL );
+                cout << "cvCompareHist(" << letra << ",.) = " << res << endl;
+                res = -res; // high score represents a better match
+
+                // Metodo 2
+//                 float res = matchShapes( Mat(contour), Mat(current_contour), CV_CONTOURS_MATCH_I3, 0);
+//                 cout << "matchShapes(" << letra << ",.) = " << res << endl;
+
+                result[ res ] = letra;
+            }
+            cvReleaseHist(&hist);
+
+            cout << "Letra " << result.begin()->second  << "!!!!!\n";
+//             cout << "Letra " << result.rbegin()->second << "!!!!!\n"; // last one - rbeing (reverse begin)
+
+            current_contour.clear();
+            result.clear();
+            cvReleaseHist(&current_hist);
         }
         prev_pt = cvPoint(-1,-1);
     }
@@ -59,7 +108,6 @@ void on_mouse( int event, int x, int y, int flags, void* )
         if( prev_pt.x < 0 ) {
             prev_pt = pt;
             printf( "Start moving!\n");
-            current_contour.clear();
         }
         else {
             cvLine( img, prev_pt, pt, cvScalarAll(255), 5, 8, 0 );
@@ -82,6 +130,11 @@ int main( int argc, char** argv )
     #include "train/contour_d.cpp"
     #include "train/contour_e.cpp"
 
+    contours[ "a" ] = contour_a;
+    contours[ "b" ] = contour_b;
+    contours[ "c" ] = contour_c;
+    contours[ "d" ] = contour_d;
+    contours[ "e" ] = contour_e;
 
     printf( "Hot keys: \n"
             "\tESC - quit the program\n"
