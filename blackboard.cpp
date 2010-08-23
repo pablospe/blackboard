@@ -30,23 +30,27 @@ Contour current_contour;
 
 void copyFrom(Seq<Point> &seq, Contour& vec)
 {
-    for(int i=0; i < vec.size(); i++) {
+    for(unsigned i=0; i < vec.size(); i++) {
         seq.push_back(vec[i]);
     }
 }
 
 std::ostream& operator<< (std::ostream &o, const Contour &v)
 {
-    for(int i=0; i<v.size(); i++) {
-        cout << "Point: (" << v[i].x << "," << v[i].y << ")" << endl;
+    for(unsigned i=0; i<v.size(); i++) {
+        o << "Point: (" << v[i].x << "," << v[i].y << ")" << endl;
     }
+
+    return o;
 }
 
 std::ostream& operator<< (std::ostream &o, const Seq<Point> &s)
 {
     Contour vec;
     s.copyTo(vec);
-    cout << vec;
+    o << vec;
+
+    return o;
 }
 
 void calcPGH( Contour &contour, CvHistogram *hist )
