@@ -8,23 +8,28 @@ OBJ=$(SRC:.cpp=.o)
 
 TARGET=blackboard
 
-INC= -I$(LIPITK_SRC_UTILS_LIB) \
-     -I$(LIPITK_SRC_INCLUDE)
+INC= -isystem$(LIPITK_SRC_UTILS_LIB) \
+     -isystem$(LIPITK_SRC_INCLUDE)
+
+# -isystem /path/to/libfoo/include. This makes the compiler treat those header files as "system headers" for the purpose of warnings, and so long as you don't enable -Wsystem-headers, 
 
 LIB= -lutil \
      -lcommon \
-     -lshaperecommon
+     -lshaperecommon \
+     -llipiengine \
+     `pkg-config --libs opencv`
 
-LIBDIR= $(LIPITK_STATIC_LIBDIR)
+LIBDIR = -L$(LIPITK_STATIC_LIBDIR) \
+         -L$(LIPITK_LIB) \
+         -Wl,-rpath,$(LIPITK_LIB),-no-undefined
 
 CFLAGS   += `pkg-config --cflags opencv` -g
 CPPFLAGS += `pkg-config --cflags opencv` -g
-# CPPFLAGS += -W -Wall
-LINKLIB  += `pkg-config --libs opencv`
+CPPFLAGS += -W -Wall -Wextra -Wno-system-headers
 
 
 all: ${OBJ} ${SRC}
-		$(CC) $(CPPFLAGS) -o ${TARGET} ${OBJ} $(LINKLIB) $(LIB) -L${LIBDIR}
+		$(CC) $(CPPFLAGS) -o ${TARGET} ${OBJ} $(LIB) ${LIBDIR}
 
 clean:
 		-@$(REMOVE) -fv ${OBJ}
