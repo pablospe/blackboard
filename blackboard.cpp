@@ -5,50 +5,23 @@
 #include <stdlib.h>
 #include <iostream>
 
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <dlfcn.h>
-#endif
+using namespace cv;
+using namespace std;
 
-#pragma warning(disable:4786)
 
-#include <string>
-#include "LTKInkFileReader.h"
-#include "LTKLipiEngineInterface.h"
-#include "LTKMacros.h"
-#include "LTKInc.h"
-#include "LTKTypes.h"
+// #include "LTKLipiEngineInterface.h"
 #include "LTKTrace.h"
+#include <../lipiengine/lipiengine.h>
 
 #ifndef _WIN32
 #define MAX_PATH 1024
 #endif
 
-/* function pointer declaration to get the function address of "createLTKLipiEngine" */
-typedef LTKLipiEngineInterface* (*FN_PTR_CREATELTKLIPIENGINE) (void);
-FN_PTR_CREATELTKLIPIENGINE createLTKLipiEngine;
-
 /* Pointer to the LipiEngine interface */
 LTKLipiEngineInterface *ptrObj = NULL;
-
-void *hLipiEngine;
-int MapFunctions();
-
-#include "LTKLoggerUtil.h"
-#include "LTKErrors.h"
-#include "LTKOSUtilFactory.h"
-#include "LTKOSUtil.h"
-
-char strLogFile[MAX_PATH] = "shaperectst.log";
-string strLogFileName;
-LTKOSUtil* utilPtr = LTKOSUtilFactory::getInstance();
-
 LTKShapeRecognizer *pShapeReco = NULL;
 
 
-using namespace cv;
-using namespace std;
 
 typedef vector<Point> Contour;
 
@@ -283,11 +256,7 @@ int main( int argc, char** argv )
 }
 
 
-
-
-
-
-// Es el main del programa shaperectst
+// Parte del main del programa shaperectst
 int shaperectst_init(int argc, char** argv)
 {
     char *envstring = NULL;
@@ -301,8 +270,7 @@ int shaperectst_init(int argc, char** argv)
         cout << endl << "Usage:";
         cout << endl << "shaperectst <logical projectname> <ink file to recognize>";
         cout << endl;
-//         delete utilPtr;
-//         return -1;
+        return -1;
     }
 
     //Get the LIPI_ROOT environment variable
@@ -310,30 +278,8 @@ int shaperectst_init(int argc, char** argv)
     if(envstring == NULL)
     {
         cout << endl << "Error, Environment variable is not set LIPI_ROOT" << endl;
-        delete utilPtr;
         return -1;
     }
-
-    //Load the LipiEngine.DLL
-    hLipiEngine = NULL;
-    iResult = utilPtr->loadSharedLib(envstring, LIPIENGINE_MODULE_STR, &hLipiEngine);
-
-    if(iResult != SUCCESS)
-    {
-        cout << "Error loading LipiEngine module" << endl;
-        delete utilPtr;
-        return -1;
-    }
-
-
-    if(MapFunctions() != 0)
-    {
-        cout << "Error fetching exported functions of the module" << endl;
-        delete utilPtr;
-        return -1;
-    }
-
-    LTKInkFileReader kkkkkk;  // !!! Problema de linkeo, si no uso esta linea
 
     //create an instance of LipiEngine Module
     ptrObj = createLTKLipiEngine();
@@ -346,26 +292,16 @@ int shaperectst_init(int argc, char** argv)
     if(iResult != SUCCESS)
     {
         cout << iResult <<": Error initializing LipiEngine." << endl;
-
-        utilPtr->unloadSharedLib(hLipiEngine);
-        delete utilPtr;
-
         return -1;
     }
 
     //Assign the logical name of the project to this string, i.e. TAMIL_CHAR
     //(or) "HINDI_GESTURES"
     string strLogicalName = string(argv[1]);
-//     LTKShapeRecognizer *pShapeReco = NULL;  // GLOBAL NOW !!!
     ptrObj->createShapeRecognizer(strLogicalName, &pShapeReco);
     if(pShapeReco == NULL)
     {
         cout << endl << "Error creating Shape Recognizer" << endl;
-        //cout << getError(ptrObj->getLastError()) << endl;
-
-
-        utilPtr->unloadSharedLib(hLipiEngine);
-        delete utilPtr;
         return -1;
     }
 
@@ -379,18 +315,12 @@ int shaperectst_init(int argc, char** argv)
     if(iResult != SUCCESS)
     {
         cout << endl << iResult << ": Error loading Model data." << endl;
-      //cout << getError(pShapeReco->getLastError()) << endl;
         ptrObj->deleteShapeRecognizer(&pShapeReco);
-
-        utilPtr->unloadSharedLib(hLipiEngine);
-        delete utilPtr;
-
         return -1;
     }
 
 
     cout << endl << "Input Logical project name = " << strLogicalName << endl;
-//     cout << endl << "Input ink file for recognition = " << path << endl;
 
 
     return 0;
@@ -413,55 +343,26 @@ int shaperectst_recog(LTKTraceGroup &inTraceGroup)
 {
     int iResult;
 
-    
-    // You can directly read the UNIPEN ink file which has all the
-    // device context, screen context and ink information and pass it to
-    // recognize function. Or you can create your own LTKTrace and populate
-    // device and screen information as in commented code below.
-    // Read the ink to be recognized from the file...
-//     string path(argv[2]);
-//     LTKInkFileReader::readUnipenInkFile(path, inTraceGroup, captureDevice, screenContext);
-
-    // Set device context information to pass onto the recognizer
-    // Uncomment and pass proper values here...
-    //captureDevice.setSamplingRate(<float value>);
-    //captureDevice.setXDPI(<float value>);
-    //captureDevice.setYDPI(<float value>);
-    //captureDevice.setLatency(<float value>);
-    //captureDevice.setUniformSampling(<true or false>);
-
     //  Set the device context, once before starting the recognition...
     pShapeReco->setDeviceContext(captureDevice);
 
     results.clear();
     results.reserve(numChoices);
-//     results.reserve(1);
-
-    // Uncomment and edit the following lines to pass ink from the pen device
-    // to recognize function.
-    // The functions should copy the values from your local ink & screen
-    // structures into inTraceGroup and screenContext variables.
-    // CopyToTraceGroup(inTraceGroup, <your ink structure>);
-    // CopyScreenContext(screenContext, <your screen info>);
 
     //now call the "recognize" method
     iResult = pShapeReco->recognize(inTraceGroup, screenContext, shapeSubset, confThreshold, numChoices, results);
     if(iResult != SUCCESS)
     {
         cout << iResult << ": Error while recognizing." << endl;
-        //cout << getError(pShapeReco->getLastError()) << endl;
         ptrObj->deleteShapeRecognizer(&pShapeReco);
 
-        utilPtr->unloadSharedLib(hLipiEngine);
-
-        delete utilPtr;
         return -1;
     }
 
     cout << endl << "Recognition Results\n\n";
 
     //Display the recognized results...
-    for(int index =0; index < results.size(); ++index)
+    for(unsigned index =0; index < results.size(); ++index)
     {
         cout << "Choice[" << index << "] " << "Recognized Shapeid = " << results[index].getShapeId() << " Confidence = " << results[index].getConfidence() << endl;
     }
@@ -475,43 +376,6 @@ int shaperectst_end()
 {
     //Delete the shape recognizer object
     ptrObj->deleteShapeRecognizer(&pShapeReco);
-
-    //unload the LipiEngine module from memory...
-    utilPtr->unloadSharedLib(hLipiEngine);
-
-    delete utilPtr;
-}
-
-
-
-/**********************************************************************************
-* NAME          : MapFunctions
-* DESCRIPTION   : This method fetches the address of the exported function of
-*                 lipiengine module
-* ARGUMENTS     :
-* RETURNS       : 0 on success, -1 on Failure.
-* NOTES         :
-* CHANGE HISTROY
-* Author            Date                Description of change
-*
-*************************************************************************************/
-int MapFunctions()
-{
-    createLTKLipiEngine = NULL;
-    void* functionHandle = NULL;
-
-    int iErrorCode = utilPtr->getFunctionAddress(hLipiEngine,
-                                             "createLTKLipiEngine",
-                                             &functionHandle);
-
-
-    createLTKLipiEngine = (FN_PTR_CREATELTKLIPIENGINE)functionHandle;
-
-    if(iErrorCode != SUCCESS)
-    {
-        cout << "Error mapping the createLTKLipiEngine function" << endl;
-        return -1;
-    }
-
+    
     return 0;
 }
