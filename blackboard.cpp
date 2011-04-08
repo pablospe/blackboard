@@ -9,16 +9,16 @@ using namespace cv;
 using namespace std;
 
 
-// #include "LTKLipiEngineInterface.h"
 #include "LTKTrace.h"
-#include <../lipiengine/lipiengine.h>
+#include "LipiEngineModule.h"
+
 
 #ifndef _WIN32
 #define MAX_PATH 1024
 #endif
 
 /* Pointer to the LipiEngine interface */
-LTKLipiEngineInterface *ptrObj = NULL;
+LTKLipiEngineInterface *lipiEngine = NULL;
 LTKShapeRecognizer *pShapeReco = NULL;
 
 
@@ -265,11 +265,10 @@ int shaperectst_init(int argc, char** argv)
 
     // first argument is the logical project name and the
     // second argument is the ink file to recognize
-    if(argc < 3)
+    if(argc < 2)
     {
         cout << endl << "Usage:";
-        cout << endl << "shaperectst <logical projectname> <ink file to recognize>";
-        cout << endl;
+        cout << endl << "./blackboard <projectname>" << endl;
         return -1;
     }
 
@@ -282,13 +281,13 @@ int shaperectst_init(int argc, char** argv)
     }
 
     //create an instance of LipiEngine Module
-    ptrObj = createLTKLipiEngine();
+    lipiEngine = LTKLipiEngineModule::getInstance();
 
     // set the LIPI_ROOT path in Lipiengine module instance
-    ptrObj->setLipiRootPath(envstring);
+    lipiEngine->setLipiRootPath(envstring);
 
     //Initialize the LipiEngine module
-    iResult = ptrObj->initializeLipiEngine();
+    iResult = lipiEngine->initializeLipiEngine();
     if(iResult != SUCCESS)
     {
         cout << iResult <<": Error initializing LipiEngine." << endl;
@@ -298,7 +297,7 @@ int shaperectst_init(int argc, char** argv)
     //Assign the logical name of the project to this string, i.e. TAMIL_CHAR
     //(or) "HINDI_GESTURES"
     string strLogicalName = string(argv[1]);
-    ptrObj->createShapeRecognizer(strLogicalName, &pShapeReco);
+    lipiEngine->createShapeRecognizer(strLogicalName, &pShapeReco);
     if(pShapeReco == NULL)
     {
         cout << endl << "Error creating Shape Recognizer" << endl;
@@ -308,14 +307,14 @@ int shaperectst_init(int argc, char** argv)
     //You can also use project and profile name to create LipiEngine instance as follows...
     //string strProjectName = "hindi_gestures";
     //string strProfileName = "default";
-    //LTKShapeRecognizer *pReco = ptrObj->createShapeRecognizer(&strProjectName, &strProfileName);
+    //LTKShapeRecognizer *pReco = lipiEngine->createShapeRecognizer(&strProjectName, &strProfileName);
 
     //Load the model data into memory before starting the recognition...
     iResult = pShapeReco->loadModelData();
     if(iResult != SUCCESS)
     {
         cout << endl << iResult << ": Error loading Model data." << endl;
-        ptrObj->deleteShapeRecognizer(&pShapeReco);
+        lipiEngine->deleteShapeRecognizer(&pShapeReco);
         return -1;
     }
 
@@ -354,7 +353,7 @@ int shaperectst_recog(LTKTraceGroup &inTraceGroup)
     if(iResult != SUCCESS)
     {
         cout << iResult << ": Error while recognizing." << endl;
-        ptrObj->deleteShapeRecognizer(&pShapeReco);
+        lipiEngine->deleteShapeRecognizer(&pShapeReco);
 
         return -1;
     }
@@ -375,7 +374,7 @@ int shaperectst_recog(LTKTraceGroup &inTraceGroup)
 int shaperectst_end()
 {
     //Delete the shape recognizer object
-    ptrObj->deleteShapeRecognizer(&pShapeReco);
+    lipiEngine->deleteShapeRecognizer(&pShapeReco);
     
     return 0;
 }

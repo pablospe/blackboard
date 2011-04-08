@@ -9,7 +9,8 @@ OBJ=$(SRC:.cpp=.o)
 TARGET=blackboard
 
 INC= -isystem$(LIPITK_SRC_UTILS_LIB) \
-     -isystem$(LIPITK_SRC_INCLUDE)
+     -isystem$(LIPITK_SRC_INCLUDE)   \
+     -isystem$(LIPITK_LIPIENGINE)
 
 # -isystem /path/to/libfoo/include. This makes the compiler treat those header files as "system headers" for the purpose of warnings, and so long as you don't enable -Wsystem-headers, 
 
