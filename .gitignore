@@ -1,0 +1,13 @@
+*.o
+*.a
+*.so
+*.log
+*.swp
+*~
+
+*.kdev4*
+*.kdev_include_paths
+
+!.gitignore
+
+build_*/*
