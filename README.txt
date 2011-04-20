@@ -21,10 +21,3 @@ For debug:
 
 Tips:
     _ make VERBOSE=1
-
-
------------
-
-OBS:
-There is another way of compilation (without cmake), using the Makefile provided. Just doing "make" in the root
-
