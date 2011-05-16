@@ -36,7 +36,8 @@ void on_mouse ( int event, int x, int y, int flags, void* )
     if( event == CV_EVENT_LBUTTONUP || ! ( flags & CV_EVENT_FLAG_LBUTTON ) ) {
         if( prev_pt.x > 0 )
         {
-            cout << "End!\n";
+            cout << "\b\b " << endl;  // Needed! It deletes the last comma
+            cout << "</trace>\n";
 
             // using LipiTk
             float res = 0;
@@ -64,13 +65,13 @@ void on_mouse ( int event, int x, int y, int flags, void* )
 
             if( prev_pt.x < 0 ) {
                 prev_pt = pt;
-                printf( "Start moving!\n" );
+                printf( "<trace>\n" );
             }
             else {
                 cvLine( img, prev_pt, pt, cvScalarAll ( 255 ), 5, 8, 0 );
             }
 
-            printf( "contour.push_back(Point2f(%d,%d));\n", x, y );
+            printf( "%d %d, ", x, y );
             current_contour.push_back ( Point2f ( x, y ) );
 
             prev_pt = pt;
@@ -217,15 +218,15 @@ int shaperectst_recog(LTKTraceGroup &inTraceGroup)
         return -1;
     }
 
-    cout << endl << "Recognition Results\n\n";
-
-    //Display the recognized results...
-    for(unsigned index =0; index < results.size(); ++index)
-    {
-        cout << "Choice[" << index << "] " << "Recognized Shapeid = " << results[index].getShapeId() << " Confidence = " << results[index].getConfidence() << endl;
-    }
-
-    cout << "Numero reconocido: " <<  results[0].getShapeId() << " !!!!\n";
+//     cout << endl << "Recognition Results\n\n";
+// 
+//     //Display the recognized results...
+//     for(unsigned index =0; index < results.size(); ++index)
+//     {
+//         cout << "Choice[" << index << "] " << "Recognized Shapeid = " << results[index].getShapeId() << " Confidence = " << results[index].getConfidence() << endl;
+//     }
+// 
+//     cout << "Numero reconocido: " <<  results[0].getShapeId() << " !!!!\n";
 
     return results[0].getConfidence();
 }

@@ -11,7 +11,7 @@ How to compile?
         _ cmake ..
         _ make
 
-For debug:
+	(for debug)
         _ mkdir build_debug
         _ cd build_debug
         _ cmake -DCMAKE_BUILD_TYPE=Debug ..
