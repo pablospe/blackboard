@@ -1,8 +1,11 @@
 cmake_minimum_required( VERSION 2.6 )
 find_package( OpenCV REQUIRED )
 
-set( LipiTk_DIR /home/spe/projects/lipi/core/build/install )
+set( LipiTk_DIR /home/spe/projects/lipi/core/install )
 find_package( LipiTk REQUIRED)
+
+MESSAGE( STATUS "\n\n" "LipiTk_DIR: " ${LipiTk_DIR} "\n" )
+MESSAGE( STATUS "\n\n" "LIPITK_LIBDIR: " ${LIPITK_LIBDIR} "\n" )
 
 project( blackboard )
 
@@ -24,10 +27,10 @@ set(blackboard_SRCS blackboard.cpp)
 # set( LIB_DIRS ${LIPITK_LIB} ${LIPITK_STATIC_LIBDIR} )
 
 
-include_directories(SYSTEM ${LIPITK_INCLUDE} )
-link_directories( ${LIPITK_LIBDIR} )
+include_directories(SYSTEM ${LIPITK_INCLUDE_DIRS} )
+link_directories( ${LIPITK_LIBRARIES_DIRS} )
 
 add_executable( blackboard ${blackboard_SRCS} )
 
-target_link_libraries( blackboard ${OpenCV_LIBS} shaperecommon ${LIPITK_LIB} )
+target_link_libraries( blackboard ${OpenCV_LIBS} ${LIPITK_LIBRARIES} )
 

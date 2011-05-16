@@ -135,7 +135,8 @@ int shaperectst_init(int argc, char** argv)
     }
 
     // Get the LIPI_ROOT environment variable
-    envstring = getenv(LIPIROOT_ENV_STRING);
+//     envstring = getenv(LIPIROOT_ENV_STRING);
+    envstring = "/home/spe/projects/lipi/core/install/";
     if(envstring == NULL)
     {
         cout << endl << "Error, Environment variable is not set LIPI_ROOT" << endl;
