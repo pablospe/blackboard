@@ -2,6 +2,7 @@
 #include <opencv/highgui.h>
 #include "LTKTrace.h"
 #include "LipiEngineModule.h"
+#include "LTKConfig.h"
 
 
 using namespace cv;
@@ -122,9 +123,7 @@ int main( int argc, char** argv )
 // Parte del main del programa shaperectst
 int shaperectst_init(int argc, char** argv)
 {
-    char *envstring = NULL;
     int iResult;
-
 
     // first argument is the logical project name
     if(argc < 2)
@@ -134,20 +133,11 @@ int shaperectst_init(int argc, char** argv)
         return -1;
     }
 
-    // Get the LIPI_ROOT environment variable
-//     envstring = getenv(LIPIROOT_ENV_STRING);
-    envstring = "/home/spe/projects/lipi/core/install/";
-    if(envstring == NULL)
-    {
-        cout << endl << "Error, Environment variable is not set LIPI_ROOT" << endl;
-        return -1;
-    }
-
     // create an instance of LipiEngine Module
     lipiEngine = LTKLipiEngineModule::getInstance();
 
     // set the LIPI_ROOT path in Lipiengine module instance
-    lipiEngine->setLipiRootPath(envstring);
+    lipiEngine->setLipiRootPath( LIPI_ROOT );
 
     // Initialize the LipiEngine module
     iResult = lipiEngine->initializeLipiEngine();
@@ -219,15 +209,15 @@ int shaperectst_recog(LTKTraceGroup &inTraceGroup)
         return -1;
     }
 
-//     cout << endl << "Recognition Results\n\n";
-// 
-//     //Display the recognized results...
-//     for(unsigned index =0; index < results.size(); ++index)
-//     {
-//         cout << "Choice[" << index << "] " << "Recognized Shapeid = " << results[index].getShapeId() << " Confidence = " << results[index].getConfidence() << endl;
-//     }
-// 
-//     cout << "Numero reconocido: " <<  results[0].getShapeId() << " !!!!\n";
+    cout << endl << "Recognition Results\n\n";
+
+    //Display the recognized results...
+    for(unsigned index =0; index < results.size(); ++index)
+    {
+        cout << "Choice[" << index << "] " << "Recognized Shapeid = " << results[index].getShapeId() << " Confidence = " << results[index].getConfidence() << endl;
+    }
+
+    cout << "Numero reconocido: " <<  results[0].getShapeId() << " !!!!\n";
 
     return results[0].getConfidence();
 }
