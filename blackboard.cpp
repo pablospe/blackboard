@@ -120,7 +120,7 @@ int main( int argc, char** argv )
 }
 
 
-// Parte del main del programa shaperectst
+// Similar to shaperectst sample
 int shaperectst_init(int argc, char** argv)
 {
     int iResult;

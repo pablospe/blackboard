@@ -18,6 +18,9 @@ How to compile?
         _ make
 
 
-
 Tips:
     _ make VERBOSE=1
+
+
+How to run it?
+    _ ./blackboard NUMERALS_NUM

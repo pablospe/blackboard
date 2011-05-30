@@ -2,7 +2,7 @@ cmake_minimum_required( VERSION 2.6 )
 find_package( OpenCV REQUIRED )
 
 find_package( LipiTk REQUIRED
-              HINTS /home/spe/projects/lipi/core/install )
+              HINTS /home/spe/projects/lipi/core/build_release/install )
 
 MESSAGE( STATUS "\n\n" "LipiTk_DIR: " ${LipiTk_DIR} "\n" )
 # MESSAGE( STATUS "\n\n" "LIPITK_LIBDIR: " ${LIPITK_LIBDIR} "\n" )
