@@ -2,6 +2,7 @@
 #include <opencv/highgui.h>
 #include "LTKTrace.h"
 #include "LipiEngineModule.h"
+#include "LTKConfig.h"
 
 
 using namespace cv;
@@ -36,7 +37,11 @@ void on_mouse ( int event, int x, int y, int flags, void* )
     if( event == CV_EVENT_LBUTTONUP || ! ( flags & CV_EVENT_FLAG_LBUTTON ) ) {
         if( prev_pt.x > 0 )
         {
-            cout << "End!\n";
+            cout << "\b\b ";  // Needed! It deletes the last comma
+            cout << "]; ";
+            cout << " x = A(:,1)'; x = (x-min(x))/800; ";
+            cout << " y = A(:,2)'; y = -y+600; y = (y-min(y))/600; ";
+            cout << " recognition( feature_extraction(x,y,15), features )\n";
 
             // using LipiTk
             float res = 0;
@@ -64,13 +69,14 @@ void on_mouse ( int event, int x, int y, int flags, void* )
 
             if( prev_pt.x < 0 ) {
                 prev_pt = pt;
-                printf( "Start moving!\n" );
+                cout << " A = [ ";
             }
             else {
                 cvLine( img, prev_pt, pt, cvScalarAll ( 255 ), 5, 8, 0 );
             }
 
-            printf( "contour.push_back(Point2f(%d,%d));\n", x, y );
+            cout << x << " " << y << "; ";
+            cout.flush();
             current_contour.push_back ( Point2f ( x, y ) );
 
             prev_pt = pt;
@@ -118,12 +124,10 @@ int main( int argc, char** argv )
 }
 
 
-// Parte del main del programa shaperectst
+// Similar to shaperectst sample
 int shaperectst_init(int argc, char** argv)
 {
-    char *envstring = NULL;
     int iResult;
-
 
     // first argument is the logical project name
     if(argc < 2)
@@ -133,19 +137,11 @@ int shaperectst_init(int argc, char** argv)
         return -1;
     }
 
-    // Get the LIPI_ROOT environment variable
-    envstring = getenv(LIPIROOT_ENV_STRING);
-    if(envstring == NULL)
-    {
-        cout << endl << "Error, Environment variable is not set LIPI_ROOT" << endl;
-        return -1;
-    }
-
     // create an instance of LipiEngine Module
     lipiEngine = LTKLipiEngineModule::getInstance();
 
     // set the LIPI_ROOT path in Lipiengine module instance
-    lipiEngine->setLipiRootPath(envstring);
+    lipiEngine->setLipiRootPath( LIPI_ROOT );
 
     // Initialize the LipiEngine module
     iResult = lipiEngine->initializeLipiEngine();
