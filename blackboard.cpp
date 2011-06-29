@@ -2,7 +2,6 @@
 #include <opencv/highgui.h>
 #include "LTKTrace.h"
 #include "LipiEngineModule.h"
-#include "LTKConfig.h"
 
 
 using namespace cv;
@@ -37,8 +36,7 @@ void on_mouse ( int event, int x, int y, int flags, void* )
     if( event == CV_EVENT_LBUTTONUP || ! ( flags & CV_EVENT_FLAG_LBUTTON ) ) {
         if( prev_pt.x > 0 )
         {
-            cout << "\b\b " << endl;  // Needed! It deletes the last comma
-            cout << "</trace>\n";
+            cout << "End!\n";
 
             // using LipiTk
             float res = 0;
@@ -66,13 +64,13 @@ void on_mouse ( int event, int x, int y, int flags, void* )
 
             if( prev_pt.x < 0 ) {
                 prev_pt = pt;
-                printf( "<trace>\n" );
+                printf( "Start moving!\n" );
             }
             else {
                 cvLine( img, prev_pt, pt, cvScalarAll ( 255 ), 5, 8, 0 );
             }
 
-            printf( "%d %d, ", x, y );
+            printf( "contour.push_back(Point2f(%d,%d));\n", x, y );
             current_contour.push_back ( Point2f ( x, y ) );
 
             prev_pt = pt;
@@ -120,10 +118,12 @@ int main( int argc, char** argv )
 }
 
 
-// Similar to shaperectst sample
+// Parte del main del programa shaperectst
 int shaperectst_init(int argc, char** argv)
 {
+    char *envstring = NULL;
     int iResult;
+
 
     // first argument is the logical project name
     if(argc < 2)
@@ -133,11 +133,19 @@ int shaperectst_init(int argc, char** argv)
         return -1;
     }
 
+    // Get the LIPI_ROOT environment variable
+    envstring = getenv(LIPIROOT_ENV_STRING);
+    if(envstring == NULL)
+    {
+        cout << endl << "Error, Environment variable is not set LIPI_ROOT" << endl;
+        return -1;
+    }
+
     // create an instance of LipiEngine Module
     lipiEngine = LTKLipiEngineModule::getInstance();
 
     // set the LIPI_ROOT path in Lipiengine module instance
-    lipiEngine->setLipiRootPath( LIPI_ROOT );
+    lipiEngine->setLipiRootPath(envstring);
 
     // Initialize the LipiEngine module
     iResult = lipiEngine->initializeLipiEngine();
