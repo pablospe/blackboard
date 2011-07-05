@@ -1,3 +1,4 @@
+#include <istream>
 #include <assert.h>
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
@@ -81,7 +82,7 @@ void drawTrace( floatVector &x, floatVector &y )
 
 
 
-void matlab_output( const LTKTrace &trace, int digit, int num_stroke =1 )
+void matlab_output_current( const LTKTrace &trace, int digit, int num_stroke =1 )
 {
     int L = trace.getNumberOfPoints();
     LTKTraceFormat format = trace.getTraceFormat();
@@ -128,32 +129,12 @@ void matlab_output( const LTKTrace &trace, int digit, int num_stroke =1 )
         cout << y[i] << ", ";
     }
     cout << y[i] << " ];\n";
-
-    cout << "t=trace;\n"
-         << "\tt.channel{1} = x; t.dim{1} = 800;"
-         << "\tt.channel{2} = y; t.dim{2} = 600;"
-         << "\tt.label = '" << digit << "';\n";
 }
 
 
-void drawUnipenFileToImage( const string &unipenFileName, int label )
+
+void matlab_output( const LTKTraceVector &traces, int label )
 {
-    LTKTraceGroup traceGroup;
-    LTKCaptureDevice captureDevice;
-    LTKScreenContext screenContext;
-    
-    try
-    {
-        LTKInkFileReader::readUnipenInkFile( unipenFileName, traceGroup, captureDevice, screenContext );
-    }
-    catch(LTKException e)
-    {
-        errorCode = EINK_FILE_OPEN;
-    }
-
-    LTKTraceVector traces = traceGroup.getAllTraces();
-//     cout << "traces.size() = " << traces.size() << endl;
-
     int N = traces.size();
     if( N == 0 )
     {
@@ -164,95 +145,133 @@ void drawUnipenFileToImage( const string &unipenFileName, int label )
 
     for( int i=0; i < N; i++ )
     {
-        matlab_output( traces[i], label );
+        matlab_output_current( traces[i], label );
+        cout << "t=trace;\n"
+             << "\tt.channel{1} = x; t.dim{1} = 800;"
+             << "\tt.channel{2} = y; t.dim{2} = 600;"
+             << "\tt.label = '" << label << "';\n";
         cout << "db{" << ++samples <<"} = t;\n";
     }
 }
 
-
-
-
-void on_mouse ( int event, int x, int y, int flags, void* )
+void readUnipenFile( const string &unipenFileName, LTKTraceVector &traces )
 {
-    if( !img )
-        return;
-
-    if( event == CV_EVENT_LBUTTONUP || ! ( flags & CV_EVENT_FLAG_LBUTTON ) ) {
-        if( prev_pt.x > 0 )
-        {
-            cout << "\b\b ";  // Needed! It deletes the last comma
-            cout << "]; ";
-            cout << " x = A(:,1)'; x = (x-min(x))/800; ";
-            cout << " y = A(:,2)'; y = -y+600; y = (y-min(y))/600; ";
-            cout << " recognition( feature_extraction(x,y,15), features )\n";
-
-            // using LipiTk
-            float res = 0;
-            LTKTrace trace;
-            for( vector< Point >::iterator iter = current_contour.begin();
-                    iter != current_contour.end(); iter++)
-            {
-                floatVector point;
-
-                point.push_back( iter->x );
-                point.push_back( iter->y );
-
-                trace.addPoint(point);
-            }
-            LTKTraceGroup traceGroup(trace);
-//             res = shaperectst_recog(traceGroup);
-
-            current_contour.clear();
-        }
-        prev_pt = cvPoint( -1, -1 );
+    LTKTraceGroup traceGroup;
+    LTKCaptureDevice captureDevice;
+    LTKScreenContext screenContext;
+  
+    try
+    {
+        LTKInkFileReader::readUnipenInkFile( unipenFileName, traceGroup, captureDevice, screenContext );
     }
-    else
-        if( event == CV_EVENT_MOUSEMOVE && ( flags & CV_EVENT_FLAG_LBUTTON ) ) {
-            CvPoint pt = cvPoint( x, y );
+    catch(LTKException e)
+    {
+        errorCode = EINK_FILE_OPEN;
+        exit(1);
+    }
 
-            if( prev_pt.x < 0 ) {
-                prev_pt = pt;
-                cout << " A = [ ";
-            }
-            else {
-                cvLine( img, prev_pt, pt, cvScalarAll ( 255 ), 5, 8, 0 );
-            }
-
-            cout << x << " " << y << "; ";
-            cout.flush();
-            current_contour.push_back ( Point2f ( x, y ) );
-
-            prev_pt = pt;
-            imshow( "", img );
-        }
+    traces = traceGroup.getAllTraces();
 }
 
 
+int str2int (const string &str) {
+    stringstream ss(str);
+    int n;
+    ss >> n;  
+    return n;
+}
 
-void createDB( const vector<string> &files )
+// Concatenate two traces
+LTKTrace concat( const LTKTrace &a, const LTKTrace &b )
+{
+    floatVector pointVec;
+    LTKTrace trace = a;
+
+    int N = b.getNumberOfPoints();
+    for( int i=0; i<N ; i++ )
+    {
+        b.getPointAt(i, pointVec);
+        trace.addPoint( pointVec );
+        pointVec.clear();
+    }
+
+    return trace;
+}
+
+
+void grouping( const string &data, LTKTraceVector &traces )
+{
+    LTKTraceVector output;
+    string line, str;
+    int begin, end;
+   
+    ifstream myfile( data.c_str() );
+    if( myfile.is_open() )
+    {
+        while( myfile.good() )
+        {
+            getline (myfile,line);
+//             cout << line << endl;
+            
+            istringstream iss(line);
+
+            iss >> str;
+            if( str == ".SEGMENT" )
+            {
+                iss >> str;
+                iss >> str;
+//                 cout << "Substring: " << str << endl;
+
+                size_t found =   str.find_last_of("-");
+                begin = str2int( str.substr(0,found) );
+                  end = str2int( str.substr(found+1) );
+//                 cout << "Substring2: " << begin << " - " << end << endl;
+
+                // Concatenate two traces
+                if( begin == end )
+                    output.push_back( traces[begin] );
+                else
+                    output.push_back( concat(traces[begin], traces[end]) );
+            }
+        }
+        
+        myfile.close();
+    }
+    else {
+        cerr << "Unable to open file";
+    }
+
+    traces = output;
+}
+
+void createDB( const vector<string> &files,
+               const vector<string> &data,
+               const vector<string> &labels )
 {
     int size = files.size();
+    LTKTraceVector traces;
+    
     for(int i = 0; i < size ; i++)
     {
-        drawUnipenFileToImage( files[i], i%10 );
+        readUnipenFile( files[i], traces );
+        grouping( data[i], traces );
+        matlab_output( traces, atoi(labels[i].c_str()) );
     }
-
-    
-//     for(int i = 1; i < files.size(); i++)
-//     {
-//         cout << "argv[" << i << "] = " << files[i] << endl;
-//         drawUnipenFileToImage( files[i], "0.bmp" );
-// //     "1.dat"
-// //     "amywldrp.dat"
-// //     "ibo0.dat"
-// 
-//     }
-
 }
 
 
+string find_and_replace( string source, const string &find, const string &replace ) {
+
+    size_t j;
+    for ( ; (j = source.find( find )) != string::npos ; ) {
+        source.replace( j, find.length(), replace );
+    }
+
+    return source;
+}
+
 int main( int argc, char** argv )
-{ 
+{
 //     cout << "Hot keys: \n"
 //             "\tESC - quit the program\n"
 //             "\tr - restore the blackboard\n";
@@ -266,15 +285,40 @@ int main( int argc, char** argv )
 //     img = cvCloneImage( img0 );
 //     imshow( "", img );
 
-    // parsing command-line
-//     cout << "argc = " << argc << endl;
-    vector<string> files;
+    
+    vector<string> files, data, labels;
+
+    int size = argc-1;
+    labels.reserve(size);
+     files.reserve(size);
+      data.reserve(size);
+
+    //! Getting "files" from command-line
     for(int i = 1; i < argc; i++)
     {
         files.push_back(argv[i]);
     }
 
-    createDB( files );
+    //! Creating "data" and "labels"
+    for(int i = 0; i < size ; i++)
+    {
+        string str = files[i];
+        
+        data.push_back( find_and_replace( str, "include/", "data/") );
+
+        // get basename (without dirname)
+        size_t found = str.find_last_of("/");
+        str = str.substr(found+1);
+
+        // get filename (wihtout extension)
+        found = str.find_last_of(".");
+        labels.push_back( str.substr(0,found) );
+
+//         cout << "Data: " << data[i] << "\tlabel: " << labels[i] << endl;
+    }
+
+
+    createDB( files, data, labels );
 
     
 /*    for( ;; ) {
@@ -291,4 +335,3 @@ int main( int argc, char** argv )
     
     return 0;
 }
-    
