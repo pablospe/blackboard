@@ -82,7 +82,7 @@ void drawTrace( floatVector &x, floatVector &y )
 
 
 
-void matlab_output_current( const LTKTrace &trace, int digit, int num_stroke =1 )
+void matlab_output_current( const LTKTrace &trace, int num_stroke =1 )
 {
     int L = trace.getNumberOfPoints();
     LTKTraceFormat format = trace.getTraceFormat();
@@ -133,7 +133,7 @@ void matlab_output_current( const LTKTrace &trace, int digit, int num_stroke =1 
 
 
 
-void matlab_output( const LTKTraceVector &traces, int label )
+void matlab_output( const LTKTraceVector &traces, string label )
 {
     int N = traces.size();
     if( N == 0 )
@@ -145,12 +145,12 @@ void matlab_output( const LTKTraceVector &traces, int label )
 
     for( int i=0; i < N; i++ )
     {
-        matlab_output_current( traces[i], label );
-        cout << "t=trace;\n"
-             << "\tt.channel{1} = x; t.dim{1} = 800;"
-             << "\tt.channel{2} = y; t.dim{2} = 600;"
+        matlab_output_current( traces[i] );
+        cout << "t=trace(x,y);\n"
+             << "\tt.dim{1} = 800;"
+             << "\tt.dim{2} = 600;"
              << "\tt.label = '" << label << "';\n";
-        cout << "db{" << ++samples <<"} = t;\n";
+        cout << "db_raw{" << ++samples <<"} = t;\n";
     }
 }
 
@@ -253,9 +253,16 @@ void createDB( const vector<string> &files,
     
     for(int i = 0; i < size ; i++)
     {
+
+// label de un caracter, filtro los simbolos matematicos (set laviola)
+//        if( labels[i].size() > 1 ) {
+//            cerr << labels[i] << "\n";
+//            continue;
+//        }
+
         readUnipenFile( files[i], traces );
         grouping( data[i], traces );
-        matlab_output( traces, atoi(labels[i].c_str()) );
+        matlab_output( traces, labels[i] );
     }
 }
 
